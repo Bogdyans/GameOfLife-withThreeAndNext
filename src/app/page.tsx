@@ -1,22 +1,22 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
-import { Canvas, useFrame } from "@react-three/fiber"
+import { useState, useEffect } from "react"
+import { Canvas } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import { Button } from "@/components/ui/button"
 import { Minus, Plus, Play, Pause } from "lucide-react"
+import CubeWall from "@/components/cube-grid";
 
 export default function CubeMatrix() {
   const [isRunning, setIsRunning] = useState(false)
-  const [speed, setSpeed] = useState(250) // Speed in milliseconds (lower = faster)
+  const [speed, setSpeed] = useState(250)
   const [grid, setGrid] = useState(() => {
     const size = 15
     return Array(size)
-        .fill()
+        .fill(false)
         .map(() => Array(size).fill(false))
   })
 
-  // Game of Life logic
   useEffect(() => {
     if (!isRunning) return
 
@@ -38,7 +38,7 @@ export default function CubeMatrix() {
               }
             }
 
-            // Apply Game of Life rules
+            // Rules
             if (currentGrid[x][y]) {
               // Live cell
               if (neighbors < 2 || neighbors > 3) {
@@ -56,13 +56,12 @@ export default function CubeMatrix() {
       })
     }
 
-    // Use the current speed for the timeout
     const intervalId = setTimeout(simulationStep, speed)
     return () => clearTimeout(intervalId)
   }, [isRunning, grid, speed])
 
-  const handleCellToggle = (x, y) => {
-    if (isRunning) return // Prevent toggling while simulation is running
+  const handleCellToggle = (x: number, y: number) => {
+    if (isRunning) return //comment to able changes in running state
 
     setGrid((currentGrid) => {
       const newGrid = [...currentGrid]
@@ -80,7 +79,6 @@ export default function CubeMatrix() {
     setSpeed((prevSpeed) => Math.min(1000, prevSpeed + 50))
   }
 
-  // Convert speed in ms to generations per second for display
   const speedInGenPerSec = (1000 / speed).toFixed(1)
 
   return (
@@ -126,47 +124,6 @@ export default function CubeMatrix() {
           <OrbitControls enableZoom={true} enablePan={true} />
         </Canvas>
       </div>
-  )
-}
-
-function CubeWall({ grid, onCellToggle }) {
-  const wallSize = grid.length
-  const cubeSize = 1
-  const gap = 0.2
-  const totalSize = wallSize * (cubeSize + gap) - gap
-
-  // Center the wall
-  const startPos = -totalSize / 2 + cubeSize / 2
-
-  const cubes = []
-  for (let x = 0; x < wallSize; x++) {
-    for (let y = 0; y < wallSize; y++) {
-      const posX = startPos + x * (cubeSize + gap)
-      const posY = startPos + y * (cubeSize + gap)
-
-      cubes.push(
-          <Cube key={`${x}-${y}`} position={[posX, posY, 0]} isAlive={grid[x][y]} onClick={() => onCellToggle(x, y)} />,
-      )
-    }
-  }
-
-  return <>{cubes}</>
-}
-
-function Cube({ position, isAlive, onClick }) {
-  const meshRef = useRef()
-
-  useFrame((state, delta) => {
-    // Subtle animation
-    meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.2 + position[0]) * 0.1
-    meshRef.current.rotation.y = Math.cos(state.clock.elapsedTime * 0.2 + position[1]) * 0.1
-  })
-
-  return (
-      <mesh ref={meshRef} position={position} onClick={onClick}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={isAlive ? "#4CAF50" : "#e0e0e0"} />
-      </mesh>
   )
 }
 
